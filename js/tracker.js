@@ -1957,6 +1957,7 @@ function updateVehicleInfo(vcallsign, newPosition) {
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="shareVehicle(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+55)+'px">Share</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="skewTdraw(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+85)+'px">SkewT</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="openURL(\'' + grafana_dashboard_url + '\')" style="top:'+(vehicle.image_src_size[1]+115)+'px">Plots</span>' : '') +
+           ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="recolorVehicle(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+145)+'px">Recolor</span>' : '') +
            '<div class="left">' +
            '<dl>';
   //mobile
@@ -1969,6 +1970,7 @@ function updateVehicleInfo(vcallsign, newPosition) {
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="shareVehicle(\'' + vcallsign + '\')" style="top:55px">Share</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="skewTdraw(\'' + vcallsign + '\')" style="top:85px">SkewT</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="openURL(\'' + grafana_dashboard_url + '\')" style="top:115px">Plots</span>' : '') + 
+           ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="recolorVehicle(\'' + vcallsign + '\')" style="top:115px">Recolor</span>' : '') +
            '<div class="left">' +
            '<dl>';
   var b    = '</dl>' +
@@ -2336,13 +2338,24 @@ function drawLaunchPrediction(vcallsign) {
 // Takes in an SVG for a balloon, parachute, target, car, etc and sets a dynamic-color
 // variable which that SVG can use to recolor any relevant elements.
 // See balloon.svg, target.svg, etc for examples
-function recolorSVG(svg_path, color) {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', svg_path, false);
-    xhr.send();
+
+// Can be called either with a SVG file path, or with an existing SVG.
+function recolorSVG(svg_input, color) {
+    let svgContent;
+    // If svg_input starts with 'data:image/svg+xml', assume it's a full SVG document string
+    if (svg_input.startsWith('data:image/svg+xml')) {
+        // remove the data:image... to leave raw XML data, then decode.
+        svgContent = decodeURIComponent(svg_input.replace('data:image/svg+xml;charset=utf-8,', ''));
+    } else {
+    // Otherwise, treat it as a file path and fetch that file to be our SVG.
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', svg_input, false);
+        xhr.send();
+        svgContent = xhr.responseText;
+    }
 
     const parser = new DOMParser();
-    const svgDocument = parser.parseFromString(xhr.responseText, 'image/svg+xml');
+    const svgDocument = parser.parseFromString(svgContent, 'image/svg+xml');
     svgDocument.documentElement.style.setProperty("--dynamic-color", color);
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgDocument.documentElement.outerHTML);
   }
@@ -3615,6 +3628,42 @@ function addPosition(position) {
     }
 
     return;
+}
+
+// When "Recolor" button is clicked in the data pane for this vehicle,
+// cycle it to the next color in the sequence. Allows user to change color,
+// primarily for sake of increased contrast on maps.
+function recolorVehicle(vcallsign) {
+    const vehicle = vehicles[vcallsign];
+
+    vehicle.color_index = (vehicle.color_index + 1) % balloon_colors.length;
+    const new_color = balloon_colors[vehicle.color_index];
+
+    // Recolor the lines on the map to the new color
+    vehicle.prediction_launch_polyline.setStyle({color: new_color});
+    vehicle.prediction_polyline.setStyle({color: new_color});
+    vehicle.polyline[0].setStyle({color: new_color});
+
+    // Recolor the prediction target
+    const targetIcon = vehicle.prediction_target.getIcon().options.iconUrl;
+    const recoloredTarget = recolorSVG(targetIcon, new_color);
+    const newTarget = L.icon( // Create new icon which inherits properties from the existing one
+        Object.assign({}, vehicle.prediction_target.options.icon.options, {
+          iconUrl: recoloredTarget // just with a new icon
+        })
+      );
+    vehicle.prediction_target.setIcon(newTarget);
+
+    // Recolor the balloon/parachute/whatever
+    const balloon = vehicle.marker.getIcon().options.iconUrl;
+    const recoloredBalloon = recolorSVG(balloon, new_color);
+    const newBalloon = L.icon(
+        Object.assign({}, vehicle.marker.options.icon.options, {
+          iconUrl: recoloredBalloon
+        })
+      );
+    vehicle.marker.setIcon(newBalloon);
+    vehicle.img_src = newBalloon;
 }
 
 // Graph Stuff
