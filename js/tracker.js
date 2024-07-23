@@ -1970,7 +1970,6 @@ function updateVehicleInfo(vcallsign, newPosition) {
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="shareVehicle(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+55)+'px">Share</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="skewTdraw(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+85)+'px">SkewT</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="openURL(\'' + grafana_dashboard_url + '\')" style="top:'+(vehicle.image_src_size[1]+115)+'px">Plots</span>' : '') +
-           ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="recolorVehicle(\'' + vcallsign + '\')" style="top:'+(vehicle.image_src_size[1]+145)+'px">Recolor</span>' : '') +
            '<div class="left">' +
            '<dl>';
   //mobile
@@ -1983,7 +1982,6 @@ function updateVehicleInfo(vcallsign, newPosition) {
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="shareVehicle(\'' + vcallsign + '\')" style="top:55px">Share</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="skewTdraw(\'' + vcallsign + '\')" style="top:85px">SkewT</span>' : '') +
            ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="openURL(\'' + grafana_dashboard_url + '\')" style="top:115px">Plots</span>' : '') + 
-           ((vehicle.vehicle_type!="car") ? '<span class="sbutton" onclick="recolorVehicle(\'' + vcallsign + '\')" style="top:145px">Recolor</span>' : '') +
            '<div class="left">' +
            '<dl>';
   var b    = '</dl>' +
