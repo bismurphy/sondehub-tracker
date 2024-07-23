@@ -3646,7 +3646,7 @@ function addPosition(position) {
 // When a color is changed in the settings, run recolorVehicle on all vehicles.
 function recolorAllVehicles(){
     // Refresh the balloon_colors array to capture all the current colors
-    for (var i = 0; i <= balloon_colors.length; i++) {
+    for (var i = 0; i < balloon_colors.length; i++) {
         balloon_colors[i] = document.getElementById("color" + i).value;
     }
     var callsign;
