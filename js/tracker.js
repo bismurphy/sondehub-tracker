@@ -74,7 +74,8 @@ var manual_pan = false;
 
 var car_index = 0;
 var car_colors = ["blue", "red", "green", "yellow", "teal", "purple"];
-var balloon_colors = ["red", "blue", "lime", "magenta", "#ffb300", "#00ffff"];
+// MUST use 7-character, lowercase hex format. No named colors or others. Due to limits of HTML color picker.
+var balloon_colors = ["#ff0000", "#0000ff", "#00ff00", "#ff00ff", "#ffb300", "#00ffff"];
 
 var nyan_color_index = 0;
 var nyan_colors = ['nyan', 'nyan-coin', 'nyan-mon', 'nyan-pirate', 'nyan-cool', 'nyan-tothemax', 'nyan-pumpkin', 'nyan-afro', 'nyan-coin', 'nyan-mummy'];
@@ -987,6 +988,18 @@ function load() {
 
     if (offline.get("opt_daylight")) {
         map.addLayer(nite);
+    }
+
+    // Create color selector boxes in settings panel
+    var color_row = document.getElementById("color_selector_row");
+    for (var i = 0; i < balloon_colors.length; i++) {
+        var input = document.createElement("input");
+        input.type = "color";
+        input.value = balloon_colors[i];
+        input.id = "color" + i;
+        input.style = "width: 30px; height: 30px; border:none; padding:0; margin:5px";
+        input.onchange = recolorAllVehicles;
+        color_row.appendChild(input);
     }
 
     getLaunchSites();
@@ -3630,29 +3643,44 @@ function addPosition(position) {
     return;
 }
 
-// When "Recolor" button is clicked in the data pane for this vehicle,
-// cycle it to the next color in the sequence. Allows user to change color,
-// primarily for sake of increased contrast on maps.
+// When a color is changed in the settings, run recolorVehicle on all vehicles.
+function recolorAllVehicles(){
+    // Refresh the balloon_colors array to capture all the current colors
+    for (var i = 0; i <= balloon_colors.length; i++) {
+        balloon_colors[i] = document.getElementById("color" + i).value;
+    }
+    var callsign;
+    for(callsign in vehicles) {
+        recolorVehicle(callsign);
+    }
+}
+
 function recolorVehicle(vcallsign) {
     const vehicle = vehicles[vcallsign];
 
-    vehicle.color_index = (vehicle.color_index + 1) % balloon_colors.length;
     const new_color = balloon_colors[vehicle.color_index];
 
     // Recolor the lines on the map to the new color
-    vehicle.prediction_launch_polyline.setStyle({color: new_color});
-    vehicle.prediction_polyline.setStyle({color: new_color});
-    vehicle.polyline[0].setStyle({color: new_color});
-
+    if (vehicle.prediction_launch_polyline){
+        vehicle.prediction_launch_polyline.setStyle({color: new_color});
+    }
+    if (vehicle.prediction_polyline){
+        vehicle.prediction_polyline.setStyle({color: new_color});
+    }
+    if (vehicle.polyline){
+        vehicle.polyline[0].setStyle({color: new_color});
+    }
     // Recolor the prediction target
-    const targetIcon = vehicle.prediction_target.getIcon().options.iconUrl;
-    const recoloredTarget = recolorSVG(targetIcon, new_color);
-    const newTarget = L.icon( // Create new icon which inherits properties from the existing one
-        Object.assign({}, vehicle.prediction_target.options.icon.options, {
-          iconUrl: recoloredTarget // just with a new icon
-        })
-      );
-    vehicle.prediction_target.setIcon(newTarget);
+    if (vehicle.prediction_target){
+        const targetIcon = vehicle.prediction_target.getIcon().options.iconUrl;
+        const recoloredTarget = recolorSVG(targetIcon, new_color);
+        const newTarget = L.icon( // Create new icon which inherits properties from the existing one
+            Object.assign({}, vehicle.prediction_target.options.icon.options, {
+            iconUrl: recoloredTarget // just with a new icon
+            })
+        );
+        vehicle.prediction_target.setIcon(newTarget);
+    }
 
     // Recolor the balloon/parachute/whatever
     const balloon = vehicle.marker.getIcon().options.iconUrl;
